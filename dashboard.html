@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraud Detection Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 25px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .result-card {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            animation: slideIn 0.5s;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fraud { background: #fff5f5; border: 2px solid #f44336; }
+        .legit { background: #f0fff4; border: 2px solid #4caf50; }
+        .frozen { background: #fff3e0; border: 2px solid #ff9800; }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .frozen-cards-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .frozen-card-item {
+            background: #fff3e0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+        .log-item {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .fraud-text { color: #f44336; font-weight: bold; }
+        .legit-text { color: #4caf50; font-weight: bold; }
+        .frozen-text { color: #ff9800; font-weight: bold; }
+        
+        .badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ AI-Powered Fraud Detection with Auto-Freeze</h1>
+            <p>Real-time monitoring | Automatic card freezing | Bank-grade security</p>
+        </header>
+        
+        <div class="grid">
+            <!-- Test Transaction Form -->
+            <div class="card">
+                <h2>📝 Test Transaction</h2>
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label>Card Number (last 4 shown):</label>
+                        <select id="card_number">
+                            <option value="4111111111111111">John Doe (****1111)</option>
+                            <option value="5555555555554444">Jane Smith (****4444)</option>
+                            <option value="378282246310005">Bob Johnson (****0005)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Transaction ID:</label>
+                        <input type="text" id="transaction_id" value="TXN_" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Amount ($):</label>
+                        <input type="number" id="amount" value="125.50" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Country:</label>
+                        <select id="country">
+                            <option value="US">🇺🇸 United States (Local)</option>
+                            <option value="UK">🇬🇧 United Kingdom</option>
+                            <option value="FR">🇫🇷 France</option>
+                            <option value="DE">🇩🇪 Germany</option>
+                            <option value="IN">🇮🇳 India</option>
+                            <option value="CN">🇨🇳 China</option>
+                            <option value="RU">🇷🇺 Russia</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Hour (0-23):</label>
+                        <input type="number" id="hour" value="14" min="0" max="23">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Previous Transactions:</label>
+                        <input type="number" id="prev_transactions" value="5" min="0">
+                    </div>
+                    
+                    <button type="submit">🔍 Analyze & Auto-Freeze if Fraud</button>
+                </form>
+                
+                <div id="result" style="display:none;" class="result-card"></div>
+            </div>
+            
+            <!-- Live Statistics -->
+            <div class="card">
+                <h2>📊 Live Statistics</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-value" id="totalChecked">0</div>
+                        <div>Transactions</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="fraudCount">0</div>
+                        <div>Fraud Detected</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="frozenCount">0</div>
+                        <div>Cards Frozen</div>
+                    </div>
+                </div>
+                
+                <h3>❄️ Currently Frozen Cards</h3>
+                <div class="frozen-cards-list" id="frozenCardsList">
+                    <div style="text-align: center; color: #999; padding: 20px;">
+                        No frozen cards
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transaction Log -->
+            <div class="card">
+                <h2>📋 Transaction Log</h2>
+                <div class="transaction-log" id="transactionLog" style="max-height: 400px; overflow-y: auto;">
+                    <div style="text-align: center; color: #999; padding: 20px;">
+                        No transactions yet
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Statistics
+        let transactionCount = 0;
+        let fraudCount = 0;
+        let frozenCards = [];
+        
+        // Demo token
+        const demoToken = 'demo_token_123';
+        
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalChecked').textContent = transactionCount;
+            document.getElementById('fraudCount').textContent = fraudCount;
+            document.getElementById('frozenCount').textContent = frozenCards.length;
+        }
+        
+        // Update frozen cards display
+        function updateFrozenCards() {
+            const list = document.getElementById('frozenCardsList');
+            if (frozenCards.length === 0) {
+                list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">No frozen cards</div>';
+                return;
+            }
+            
+            list.innerHTML = frozenCards.map(card => `
+                <div class="frozen-card-item">
+                    <strong>❄️ Card: ****${card.card}</strong><br>
+                    <small>Customer: ${card.customer}</small><br>
+                    <small>Time: ${card.time}</small><br>
+                    <small>Reason: ${card.reason}</small>
+                </div>
+            `).join('');
+        }
+        
+        // Add to log
+        function addToLog(transaction, result) {
+            const log = document.getElementById('transactionLog');
+            
+            if (log.children.length === 1 && log.children[0].textContent.includes('No transactions')) {
+                log.innerHTML = '';
+            }
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-item';
+            
+            const time = new Date().toLocaleTimeString();
+            const isFraud = result.decision === 'FRAUD';
+            const isFrozen = result.action.includes('FROZEN');
+            
+            let statusClass = isFraud ? 'fraud-text' : 'legit-text';
+            let statusText = isFraud ? '🚨 FRAUD' : '✅ LEGIT';
+            if (isFrozen) statusText = '❄️ FROZEN';
+            
+            logEntry.innerHTML = `
+                <div>
+                    <strong>${transaction.transaction_id}</strong>
+                    <small> $${transaction.amount} | ${transaction.country}</small>
+                </div>
+                <div>
+                    <span class="${statusClass}">${statusText}</span>
+                    <small style="margin-left: 10px;">${time}</small>
+                </div>
+            `;
+            
+            log.insertBefore(logEntry, log.firstChild);
+            
+            while (log.children.length > 10) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        document.getElementById('transactionForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const transaction = {
+                card_number: document.getElementById('card_number').value,
+                transaction_id: document.getElementById('transaction_id').value || 'TXN_' + Date.now(),
+                amount: document.getElementById('amount').value,
+                country: document.getElementById('country').value,
+                hour: parseInt(document.getElementById('hour').value) || new Date().getHours(),
+                prev_transactions: parseInt(document.getElementById('prev_transactions').value) || 0,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Show loading
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result-card';
+            resultDiv.innerHTML = '<h3>⏳ Analyzing transaction...</h3>';
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${demoToken}`
+                    },
+                    body: JSON.stringify(transaction)
+                });
+                
+                const result = await response.json();
+                
+                // Update counters
+                transactionCount++;
+                if (result.decision === 'FRAUD') {
+                    fraudCount++;
+                    
+                    // Add to frozen cards if not already there
+                    const newFrozen = {
+                        card: result.card_last4,
+                        customer: result.customer,
+                        time: new Date().toLocaleString(),
+                        reason: `Fraud detected: $${transaction.amount} from ${transaction.country}`
+                    };
+                    frozenCards.unshift(newFrozen);
+                }
+                
+                updateStats();
+                updateFrozenCards();
+                addToLog(transaction, result);
+                
+                // Show result
+                resultDiv.className = `result-card ${result.decision === 'FRAUD' ? 'fraud' : 'legit'}`;
+                
+                const probability = (result.fraud_probability * 100).toFixed(1);
+                
+                resultDiv.innerHTML = `
+                    <h3>${result.decision === 'FRAUD' ? '🚨 FRAUD DETECTED' : '✅ TRANSACTION APPROVED'}</h3>
+                    <p style="font-size: 18px; margin: 15px 0;"><strong>Action:</strong> ${result.action}</p>
+                    <p><strong>Card:</strong> ****${result.card_last4}</p>
+                    <p><strong>Fraud Probability:</strong> ${probability}%</p>
+                    <p><small>${result.frozen_cards_total} card(s) currently frozen</small></p>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<h3 style="color: #f44336;">❌ Error</h3><p>${error.message}</p>`;
+            }
+        };
+        
+        // Load frozen cards on startup
+        async function loadFrozenCards() {
+            try {
+                const response = await fetch('/frozen-cards');
+                const data = await response.json();
+                frozenCards = data.frozen_cards || [];
+                updateFrozenCards();
+            } catch (error) {
+                console.log('Could not load frozen cards');
+            }
+        }
+        
+        window.onload = function() {
+            document.getElementById('transaction_id').value = 'TXN_' + Math.floor(Math.random() * 10000);
+            loadFrozenCards();
+        };
+    </script>
+</body>
+</html>
